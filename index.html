@@ -3,217 +3,269 @@
 <head>
 <meta charset="UTF-8">
 <title>Quản lý phòng trọ</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <style>
-    body { font-family: "Times New Roman"; }
-    .container { width: 900px; margin: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid black; padding: 6px; text-align: center; }
-    .left { text-align: left; }
-    input { padding: 5px; margin: 3px; }
-    button { padding: 5px 10px; margin: 3px; cursor: pointer; }
+body { font-family: "Times New Roman"; }
+
+/* LOGIN */
+#loginBox {
+    width: 300px;
+    margin: 100px auto;
+    text-align: center;
+    border: 1px solid black;
+    padding: 20px;
+}
+
+.container { width: 900px; margin: auto; display:none; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid black; padding: 6px; text-align: center; }
+
+input { padding: 5px; margin: 3px; }
+button { padding: 5px 10px; margin: 3px; cursor: pointer; }
+
+/* IN A4 */
+@media print {
+    @page { size: A4; margin: 20mm; }
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { position: absolute; top: 0; left: 0; width: 100%; }
+    button { display:none; }
+}
 </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>Nhà Trọ Thiên An</h1>
+<!-- LOGIN -->
+<div id="loginBox">
+    <h2>Đăng nhập</h2>
+    <input id="user" placeholder="Tài khoản"><br>
+    <input id="pass" type="password" placeholder="Mật khẩu"><br>
+    <button onclick="login()">Đăng nhập</button>
+</div>
 
-    <!-- FORM -->
-    <div>
-        <input id="phong" placeholder="Phòng">
-        <input id="tuNgay" type="date">
-        <input id="denNgay" type="date"><br>
+<!-- APP -->
+<div class="container" id="app">
 
-        <input id="dienCu" placeholder="Điện cũ">
-        <input id="dienMoi" placeholder="Điện mới">
+<h1>QUẢN LÝ PHÒNG TRỌ</h1>
 
-        <input id="nuocCu" placeholder="Nước cũ">
-        <input id="nuocMoi" placeholder="Nước mới">
+<button onclick="logout()">Đăng xuất</button>
 
-        <br>
+<div>
+<input id="phong" placeholder="Phòng">
+<input id="tuNgay" type="date">
+<input id="denNgay" type="date"><br>
 
-        Đơn giá điện: <input id="giaDien" value="3800">
-        Đơn giá nước: <input id="giaNuoc" value="30000">
+<input id="dienCu" placeholder="Điện cũ">
+<input id="dienMoi" placeholder="Điện mới">
 
-        <br>
-        <button onclick="addRoom()">Thêm</button>
-        <button onclick="updateRoom()">Sửa</button>
-    </div>
+<input id="nuocCu" placeholder="Nước cũ">
+<input id="nuocMoi" placeholder="Nước mới"><br>
 
-    <!-- DANH SÁCH -->
-    <table>
-        <tr>
-            <th>Phòng</th>
-            <th>Thời gian</th>
-            <th>Điện</th>
-            <th>Nước</th>
-            <th>Hành động</th>
-        </tr>
-        <tbody id="roomList"></tbody>
-    </table>
+Đơn giá điện: <input id="giaDien" value="3800">
+Đơn giá nước: <input id="giaNuoc" value="30000"><br>
 
-    <hr>
+<button onclick="addRoom()">Thêm</button>
+<button onclick="updateRoom()">Sửa</button>
+<button onclick="undoDelete()">Hoàn tác</button>
+</div>
 
-    <!-- PHIẾU THU -->
-    <h2>Bảng Chốt Số Điện Nước</h2>
-    <div>
-        Phòng: <span id="viewPhong"></span><br>
-        Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></span>
-    </div>
+<table>
+<tr>
+<th>Phòng</th>
+<th>Thời gian</th>
+<th>Điện</th>
+<th>Nước</th>
+<th>Hành động</th>
+</tr>
+<tbody id="roomList"></tbody>
+</table>
 
-    <table>
-        <tr>
-            <th>Phòng</th>
-            <th>Nội dung</th>
-            <th>Số cũ</th>
-            <th>Số mới</th>
-            <th>Tổng</th>
-            <th>Đơn giá</th>
-            <th>Thành tiền</th>
-        </tr>
+<hr>
 
-        <tr>
-            <td id="p1"></td>
-            <td class="left">Tiền điện</td>
-            <td id="dc"></td>
-            <td id="dm"></td>
-            <td id="tongD"></td>
-            <td id="giaD"></td>
-            <td id="tienD"></td>
-        </tr>
+<div id="printArea">
+<h2 style="text-align:center;">PHIẾU THU</h2>
 
-        <tr>
-            <td id="p2"></td>
-            <td class="left">Tiền nước</td>
-            <td id="nc"></td>
-            <td id="nm"></td>
-            <td id="tongN"></td>
-            <td id="giaN"></td>
-            <td id="tienN"></td>
-        </tr>
+<div>
+Phòng: <span id="viewPhong"></span><br>
+Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></span>
+</div>
 
-        <tr>
-            <td colspan="6"><b>Tổng cộng</b></td>
-            <td id="tongAll"></td>
-        </tr>
-    </table>
+<table>
+<tr>
+<th>Phòng</th>
+<th>Nội dung</th>
+<th>Số cũ</th>
+<th>Số mới</th>
+<th>Tổng</th>
+<th>Đơn giá</th>
+<th>Thành tiền</th>
+</tr>
+
+<tr>
+<td id="p1"></td>
+<td>Tiền điện</td>
+<td id="dc"></td>
+<td id="dm"></td>
+<td id="tongD"></td>
+<td id="giaD"></td>
+<td id="tienD"></td>
+</tr>
+
+<tr>
+<td id="p2"></td>
+<td>Tiền nước</td>
+<td id="nc"></td>
+<td id="nm"></td>
+<td id="tongN"></td>
+<td id="giaN"></td>
+<td id="tienN"></td>
+</tr>
+
+<tr>
+<td colspan="6"><b>Tổng cộng</b></td>
+<td id="tongAll"></td>
+</tr>
+</table>
+
+<br><br>
+
+<table style="border:none;">
+<tr>
+<td style="border:none; text-align:center;">Người thu<br><br>(Ký tên)</td>
+<td style="border:none; text-align:center;">Người nộp<br><br>(Ký tên)</td>
+</tr>
+</table>
+
+</div>
+
+<button onclick="printPhieu()">🖨️ In</button>
+<button onclick="exportExcel()">📊 Excel</button>
+
 </div>
 
 <script>
-let rooms = [];
-let selectedIndex = -1;
+const USERNAME="admin", PASSWORD="26082004";
 
-// format ngày
-function formatDate(dateStr) {
-    if (!dateStr) return "";
-    let d = new Date(dateStr);
-    let day = String(d.getDate()).padStart(2, '0');
-    let month = String(d.getMonth() + 1).padStart(2, '0');
-    let year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+let rooms=[],selectedIndex=-1,lastDeleted=null;
+
+function login(){
+let u=user.value,p=pass.value;
+if(u===USERNAME&&p===PASSWORD){
+localStorage.setItem("loggedIn","true");
+showApp();
+}else alert("Sai!");
 }
 
-// 🔥 LƯU LOCAL
-function saveData() {
-    localStorage.setItem("rooms", JSON.stringify(rooms));
+function showApp(){
+loginBox.style.display="none";
+app.style.display="block";
 }
 
-// 🔥 LOAD DATA
-function loadData() {
-    let data = localStorage.getItem("rooms");
-    if (data) {
-        rooms = JSON.parse(data);
-        render();
-    }
+function logout(){
+localStorage.removeItem("loggedIn");
+location.reload();
 }
 
-function getData() {
-    return {
-        phong: document.getElementById("phong").value,
-        tuNgay: document.getElementById("tuNgay").value,
-        denNgay: document.getElementById("denNgay").value,
-        dienCu: Number(document.getElementById("dienCu").value),
-        dienMoi: Number(document.getElementById("dienMoi").value),
-        nuocCu: Number(document.getElementById("nuocCu").value),
-        nuocMoi: Number(document.getElementById("nuocMoi").value)
-    };
+function formatDate(d){
+if(!d)return "";
+let x=new Date(d);
+return `${String(x.getDate()).padStart(2,'0')}/${String(x.getMonth()+1).padStart(2,'0')}/${x.getFullYear()}`;
 }
 
-function render() {
-    let html = "";
-    rooms.forEach((r, i) => {
-        html += `
-        <tr>
-            <td>${r.phong}</td>
-            <td>${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)}</td>
-            <td>${r.dienMoi - r.dienCu}</td>
-            <td>${r.nuocMoi - r.nuocCu}</td>
-            <td>
-                <button onclick="selectRoom(${i})">Chọn</button>
-                <button onclick="deleteRoom(${i})">Xoá</button>
-            </td>
-        </tr>`;
-    });
-    document.getElementById("roomList").innerHTML = html;
+function money(n){return n.toLocaleString('vi-VN');}
+
+function save(){localStorage.setItem("rooms",JSON.stringify(rooms));}
+function load(){let d=localStorage.getItem("rooms");if(d){rooms=JSON.parse(d);render();}}
+
+function getData(){
+return{phong:phong.value,tuNgay:tuNgay.value,denNgay:denNgay.value,
+dienCu:+dienCu.value,dienMoi:+dienMoi.value,
+nuocCu:+nuocCu.value,nuocMoi:+nuocMoi.value};
 }
 
-function addRoom() {
-    rooms.push(getData());
-    saveData();
-    render();
+function render(){
+roomList.innerHTML=rooms.map((r,i)=>`
+<tr>
+<td>${r.phong}</td>
+<td>${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)}</td>
+<td>${r.dienMoi-r.dienCu}</td>
+<td>${r.nuocMoi-r.nuocCu}</td>
+<td>
+<button onclick="selectRoom(${i})">Chọn</button>
+<button onclick="deleteRoom(${i})">Xoá</button>
+</td>
+</tr>`).join("");
 }
 
-function updateRoom() {
-    if (selectedIndex === -1) return;
-    rooms[selectedIndex] = getData();
-    saveData();
-    render();
+function addRoom(){rooms.push(getData());save();render();}
+function updateRoom(){if(selectedIndex!=-1){rooms[selectedIndex]=getData();save();render();}}
+
+function deleteRoom(i){
+if(!confirm("Xoá?"))return;
+lastDeleted={data:rooms[i],index:i};
+rooms.splice(i,1);
+save();render();
 }
 
-function deleteRoom(i) {
-    rooms.splice(i, 1);
-    saveData();
-    render();
+function undoDelete(){
+if(!lastDeleted)return;
+rooms.splice(lastDeleted.index,0,lastDeleted.data);
+save();render();
+lastDeleted=null;
 }
 
-function selectRoom(i) {
-    selectedIndex = i;
-    let r = rooms[i];
+function selectRoom(i){
+selectedIndex=i;
+let r=rooms[i],gd=+giaDien.value,gn=+giaNuoc.value;
 
-    let giaDien = Number(document.getElementById("giaDien").value);
-    let giaNuoc = Number(document.getElementById("giaNuoc").value);
+viewPhong.innerText=r.phong;
+viewTu.innerText=formatDate(r.tuNgay);
+viewDen.innerText=formatDate(r.denNgay);
 
-    document.getElementById("viewPhong").innerText = r.phong;
-    document.getElementById("viewTu").innerText = formatDate(r.tuNgay);
-    document.getElementById("viewDen").innerText = formatDate(r.denNgay);
+p1.innerText=p2.innerText=r.phong;
 
-    document.getElementById("p1").innerText = r.phong;
-    document.getElementById("p2").innerText = r.phong;
+let td=r.dienMoi-r.dienCu,tn=r.nuocMoi-r.nuocCu;
 
-    let tongD = r.dienMoi - r.dienCu;
-    let tongN = r.nuocMoi - r.nuocCu;
+dc.innerText=r.dienCu;dm.innerText=r.dienMoi;tongD.innerText=td;
+nc.innerText=r.nuocCu;nm.innerText=r.nuocMoi;tongN.innerText=tn;
 
-    document.getElementById("dc").innerText = r.dienCu;
-    document.getElementById("dm").innerText = r.dienMoi;
-    document.getElementById("tongD").innerText = tongD;
+giaD.innerText=money(gd);giaN.innerText=money(gn);
 
-    document.getElementById("nc").innerText = r.nuocCu;
-    document.getElementById("nm").innerText = r.nuocMoi;
-    document.getElementById("tongN").innerText = tongN;
+let tienD=td*gd,tienN=tn*gn;
 
-    document.getElementById("giaD").innerText = giaDien;
-    document.getElementById("giaN").innerText = giaNuoc;
-
-    let tienD = tongD * giaDien;
-    let tienN = tongN * giaNuoc;
-
-    document.getElementById("tienD").innerText = tienD;
-    document.getElementById("tienN").innerText = tienN;
-    document.getElementById("tongAll").innerText = tienD + tienN;
+tienD_el.innerText=money(tienD);
+tienN_el.innerText=money(tienN);
+tongAll.innerText=money(tienD+tienN);
 }
 
-// 🔥 tự load khi mở web
-window.onload = loadData;
+let tienD_el=document.getElementById("tienD");
+let tienN_el=document.getElementById("tienN");
+
+function printPhieu(){window.print();}
+
+function exportExcel(){
+let data=rooms.map(r=>({
+Phòng:r.phong,
+"Từ ngày":formatDate(r.tuNgay),
+"Đến ngày":formatDate(r.denNgay),
+Điện:r.dienMoi-r.dienCu,
+Nước:r.nuocMoi-r.nuocCu
+}));
+
+let ws=XLSX.utils.json_to_sheet(data);
+let wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Data");
+XLSX.writeFile(wb,"phong.xlsx");
+}
+
+window.onload=function(){
+load();
+if(localStorage.getItem("loggedIn")==="true")showApp();
+}
 </script>
 
 </body>
