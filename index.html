@@ -2,14 +2,13 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Nhà Trọ Thiên An</title>
+<title>Quản lý phòng trọ</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 body { font-family: "Times New Roman"; }
 
-/* LOGIN */
 #loginBox {
     width: 300px;
     margin: 100px auto;
@@ -18,7 +17,7 @@ body { font-family: "Times New Roman"; }
     padding: 20px;
 }
 
-.container { width: 900px; margin: auto; display:none; }
+.container { width: 1000px; margin: auto; display:none; }
 
 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border: 1px solid black; padding: 6px; text-align: center; }
@@ -39,19 +38,16 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginBox">
-    <h2>Đăng nhập</h2>
-    <input id="user" placeholder="Tài khoản"><br>
-    <input id="pass" type="password" placeholder="Mật khẩu"><br>
-    <button onclick="login()">Đăng nhập</button>
+<h2>Đăng nhập</h2>
+<input id="user" placeholder="Tài khoản"><br>
+<input id="pass" type="password" placeholder="Mật khẩu"><br>
+<button onclick="login()">Đăng nhập</button>
 </div>
 
-<!-- APP -->
 <div class="container" id="app">
 
-<h1>Nhà Trọ Thiên An</h1>
-
+<h1>NHÀ TRỌ THIÊN AN</h1>
 <button onclick="logout()">Đăng xuất</button>
 
 <div>
@@ -69,16 +65,18 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 Đơn giá nước: <input id="giaNuoc" value="30000"><br>
 
 <button onclick="addRoom()">Thêm</button>
-<button onclick="updateRoom()">Sửa</button>
 <button onclick="undoDelete()">Hoàn tác</button>
+<button onclick="viewAllRooms()">Xem tất cả</button>
 </div>
 
 <table>
 <tr>
 <th>Phòng</th>
 <th>Thời gian</th>
-<th>Điện</th>
-<th>Nước</th>
+<th>Điện cũ</th>
+<th>Điện mới</th>
+<th>Nước cũ</th>
+<th>Nước mới</th>
 <th>Hành động</th>
 </tr>
 <tbody id="roomList"></tbody>
@@ -94,7 +92,7 @@ Phòng: <span id="viewPhong"></span><br>
 Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></span>
 </div>
 
-<table>
+<table id="billTable">
 <tr>
 <th>Phòng</th>
 <th>Nội dung</th>
@@ -103,31 +101,6 @@ Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></spa
 <th>Tổng</th>
 <th>Đơn giá</th>
 <th>Thành tiền</th>
-</tr>
-
-<tr>
-<td id="p1"></td>
-<td>Tiền điện</td>
-<td id="dc"></td>
-<td id="dm"></td>
-<td id="tongD"></td>
-<td id="giaD"></td>
-<td id="tienD"></td>
-</tr>
-
-<tr>
-<td id="p2"></td>
-<td>Tiền nước</td>
-<td id="nc"></td>
-<td id="nm"></td>
-<td id="tongN"></td>
-<td id="giaN"></td>
-<td id="tienN"></td>
-</tr>
-
-<tr>
-<td colspan="6"><b>Tổng cộng</b></td>
-<td id="tongAll"></td>
 </tr>
 </table>
 
@@ -150,103 +123,182 @@ Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></spa
 <script>
 const USERNAME="admin", PASSWORD="26082004";
 
-let rooms=[],selectedIndex=-1,lastDeleted=null;
+let rooms=[], lastDeleted=null;
 
+// LOGIN
 function login(){
-let u=user.value,p=pass.value;
-if(u===USERNAME&&p===PASSWORD){
+if(user.value===USERNAME && pass.value===PASSWORD){
 localStorage.setItem("loggedIn","true");
 showApp();
 }else alert("Sai!");
 }
+function showApp(){ loginBox.style.display="none"; app.style.display="block"; }
+function logout(){ localStorage.removeItem("loggedIn"); location.reload(); }
 
-function showApp(){
-loginBox.style.display="none";
-app.style.display="block";
-}
-
-function logout(){
-localStorage.removeItem("loggedIn");
-location.reload();
-}
-
+// FORMAT
 function formatDate(d){
 if(!d)return "";
 let x=new Date(d);
 return `${String(x.getDate()).padStart(2,'0')}/${String(x.getMonth()+1).padStart(2,'0')}/${x.getFullYear()}`;
 }
-
 function money(n){return n.toLocaleString('vi-VN');}
 
+// STORAGE
 function save(){localStorage.setItem("rooms",JSON.stringify(rooms));}
-function load(){let d=localStorage.getItem("rooms");if(d){rooms=JSON.parse(d);render();}}
+function load(){let d=localStorage.getItem("rooms"); if(d){rooms=JSON.parse(d); render();}}
 
+// DATA
 function getData(){
-return{phong:phong.value,tuNgay:tuNgay.value,denNgay:denNgay.value,
-dienCu:+dienCu.value,dienMoi:+dienMoi.value,
-nuocCu:+nuocCu.value,nuocMoi:+nuocMoi.value};
-}
+return {
+phong:phong.value,
+tuNgay:tuNgay.value,
+denNgay:denNgay.value,
+dienCu:+dienCu.value,
+dienMoi:+dienMoi.value,
+nuocCu:+nuocCu.value,
+nuocMoi:+nuocMoi.value
+}}
 
+// RENDER
 function render(){
-roomList.innerHTML=rooms.map((r,i)=>`
+roomList.innerHTML = rooms.map((r,i)=>`
 <tr>
-<td>${r.phong}</td>
-<td>${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)}</td>
-<td>${r.dienMoi-r.dienCu}</td>
-<td>${r.nuocMoi-r.nuocCu}</td>
+<td contenteditable onblur="editCell(${i},'phong',this.innerText)">${r.phong}</td>
+
 <td>
-<button onclick="selectRoom(${i})">Chọn</button>
+<input type="date" value="${r.tuNgay}" onchange="editCell(${i},'tuNgay',this.value)">
+<br>
+<input type="date" value="${r.denNgay}" onchange="editCell(${i},'denNgay',this.value)">
+</td>
+
+<td contenteditable onblur="editCell(${i},'dienCu',this.innerText)">${r.dienCu}</td>
+<td contenteditable onblur="editCell(${i},'dienMoi',this.innerText)">${r.dienMoi}</td>
+
+<td contenteditable onblur="editCell(${i},'nuocCu',this.innerText)">${r.nuocCu}</td>
+<td contenteditable onblur="editCell(${i},'nuocMoi',this.innerText)">${r.nuocMoi}</td>
+
+<td>
+<button onclick="selectRoom(${i})">Xem</button>
 <button onclick="deleteRoom(${i})">Xoá</button>
 </td>
-</tr>`).join("");
+</tr>
+`).join("");
 }
 
-function addRoom(){rooms.push(getData());save();render();}
-function updateRoom(){if(selectedIndex!=-1){rooms[selectedIndex]=getData();save();render();}}
+// EDIT
+function editCell(i,field,value){
+if(field.includes("dien")||field.includes("nuoc")) value=Number(value);
+rooms[i][field]=value;
+save();
+render();
+}
 
+// CRUD
+function addRoom(){rooms.push(getData()); save(); render();}
 function deleteRoom(i){
-if(!confirm("Xoá?"))return;
+if(!confirm("Xoá?")) return;
 lastDeleted={data:rooms[i],index:i};
 rooms.splice(i,1);
-save();render();
+save(); render();
 }
-
 function undoDelete(){
-if(!lastDeleted)return;
+if(!lastDeleted) return;
 rooms.splice(lastDeleted.index,0,lastDeleted.data);
-save();render();
+save(); render();
 lastDeleted=null;
 }
 
+// XEM 1 PHÒNG
 function selectRoom(i){
-selectedIndex=i;
 let r=rooms[i],gd=+giaDien.value,gn=+giaNuoc.value;
+
+let td=r.dienMoi-r.dienCu;
+let tn=r.nuocMoi-r.nuocCu;
+
+let tienD=td*gd;
+let tienN=tn*gn;
+
+billTable.innerHTML=`
+<tr>
+<th>Phòng</th><th>Nội dung</th><th>Số cũ</th><th>Số mới</th><th>Tổng</th><th>Đơn giá</th><th>Thành tiền</th>
+</tr>
+
+<tr>
+<td>${r.phong}</td><td>Tiền điện</td>
+<td>${r.dienCu}</td><td>${r.dienMoi}</td>
+<td>${td}</td><td>${money(gd)}</td><td>${money(tienD)}</td>
+</tr>
+
+<tr>
+<td>${r.phong}</td><td>Tiền nước</td>
+<td>${r.nuocCu}</td><td>${r.nuocMoi}</td>
+<td>${tn}</td><td>${money(gn)}</td><td>${money(tienN)}</td>
+</tr>
+
+<tr>
+<td colspan="6"><b>Tổng phòng</b></td>
+<td><b>${money(tienD+tienN)}</b></td>
+</tr>
+`;
 
 viewPhong.innerText=r.phong;
 viewTu.innerText=formatDate(r.tuNgay);
 viewDen.innerText=formatDate(r.denNgay);
-
-p1.innerText=p2.innerText=r.phong;
-
-let td=r.dienMoi-r.dienCu,tn=r.nuocMoi-r.nuocCu;
-
-dc.innerText=r.dienCu;dm.innerText=r.dienMoi;tongD.innerText=td;
-nc.innerText=r.nuocCu;nm.innerText=r.nuocMoi;tongN.innerText=tn;
-
-giaD.innerText=money(gd);giaN.innerText=money(gn);
-
-let tienD=td*gd,tienN=tn*gn;
-
-tienD_el.innerText=money(tienD);
-tienN_el.innerText=money(tienN);
-tongAll.innerText=money(tienD+tienN);
 }
 
-let tienD_el=document.getElementById("tienD");
-let tienN_el=document.getElementById("tienN");
+// XEM TẤT CẢ (BẢN XỊN)
+function viewAllRooms(){
+let html="";
+let gd=+giaDien.value, gn=+giaNuoc.value;
 
+rooms.forEach(r=>{
+let td=r.dienMoi-r.dienCu;
+let tn=r.nuocMoi-r.nuocCu;
+
+let tienD=td*gd;
+let tienN=tn*gn;
+let tong=tienD+tienN;
+
+html+=`
+<tr>
+<td colspan="7" style="background:#ddd; font-weight:bold; text-align:left;">
+PHÒNG ${r.phong}
+</td>
+</tr>
+
+<tr>
+<td>${r.phong}</td><td>Tiền điện</td>
+<td>${r.dienCu}</td><td>${r.dienMoi}</td>
+<td>${td}</td><td>${money(gd)}</td><td>${money(tienD)}</td>
+</tr>
+
+<tr>
+<td>${r.phong}</td><td>Tiền nước</td>
+<td>${r.nuocCu}</td><td>${r.nuocMoi}</td>
+<td>${tn}</td><td>${money(gn)}</td><td>${money(tienN)}</td>
+</tr>
+
+<tr>
+<td colspan="6" style="text-align:right;"><b>Tổng phòng ${r.phong}</b></td>
+<td><b>${money(tong)}</b></td>
+</tr>
+`;
+});
+
+billTable.innerHTML=`
+<tr>
+<th>Phòng</th><th>Nội dung</th><th>Số cũ</th><th>Số mới</th><th>Tổng</th><th>Đơn giá</th><th>Thành tiền</th>
+</tr>
+${html}
+`;
+
+viewPhong.innerText="DANH SÁCH PHÒNG";
+viewTu.innerText="";
+viewDen.innerText="";
+}
+
+// IN + EXCEL
 function printPhieu(){window.print();}
-
 function exportExcel(){
 let data=rooms.map(r=>({
 Phòng:r.phong,
@@ -255,16 +307,16 @@ Phòng:r.phong,
 Điện:r.dienMoi-r.dienCu,
 Nước:r.nuocMoi-r.nuocCu
 }));
-
 let ws=XLSX.utils.json_to_sheet(data);
 let wb=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb,ws,"Data");
 XLSX.writeFile(wb,"phong.xlsx");
 }
 
+// INIT
 window.onload=function(){
 load();
-if(localStorage.getItem("loggedIn")==="true")showApp();
+if(localStorage.getItem("loggedIn")==="true") showApp();
 }
 </script>
 
