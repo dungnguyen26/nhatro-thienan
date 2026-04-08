@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Quản lý phòng trọ</title>
+<style>
+    body { font-family: "Times New Roman"; }
+    .container { width: 900px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid black; padding: 6px; text-align: center; }
+    .left { text-align: left; }
+    input { padding: 5px; margin: 3px; }
+    button { padding: 5px 10px; margin: 3px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Nhà Trọ Thiên An</h1>
+
+    <!-- FORM -->
+    <div>
+        <input id="phong" placeholder="Phòng">
+        <input id="tuNgay" type="date">
+        <input id="denNgay" type="date"><br>
+
+        <input id="dienCu" placeholder="Điện cũ">
+        <input id="dienMoi" placeholder="Điện mới">
+
+        <input id="nuocCu" placeholder="Nước cũ">
+        <input id="nuocMoi" placeholder="Nước mới">
+
+        <br>
+
+        Đơn giá điện: <input id="giaDien" value="3800">
+        Đơn giá nước: <input id="giaNuoc" value="30000">
+
+        <br>
+        <button onclick="addRoom()">Thêm</button>
+        <button onclick="updateRoom()">Sửa</button>
+    </div>
+
+    <!-- DANH SÁCH -->
+    <table>
+        <tr>
+            <th>Phòng</th>
+            <th>Thời gian</th>
+            <th>Điện</th>
+            <th>Nước</th>
+            <th>Hành động</th>
+        </tr>
+        <tbody id="roomList"></tbody>
+    </table>
+
+    <hr>
+
+    <!-- PHIẾU THU -->
+    <h2>Bảng Chốt Số Điện Nước</h2>
+    <div>
+        Phòng: <span id="viewPhong"></span><br>
+        Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></span>
+    </div>
+
+    <table>
+        <tr>
+            <th>Phòng</th>
+            <th>Nội dung</th>
+            <th>Số cũ</th>
+            <th>Số mới</th>
+            <th>Tổng</th>
+            <th>Đơn giá</th>
+            <th>Thành tiền</th>
+        </tr>
+
+        <tr>
+            <td id="p1"></td>
+            <td class="left">Tiền điện</td>
+            <td id="dc"></td>
+            <td id="dm"></td>
+            <td id="tongD"></td>
+            <td id="giaD"></td>
+            <td id="tienD"></td>
+        </tr>
+
+        <tr>
+            <td id="p2"></td>
+            <td class="left">Tiền nước</td>
+            <td id="nc"></td>
+            <td id="nm"></td>
+            <td id="tongN"></td>
+            <td id="giaN"></td>
+            <td id="tienN"></td>
+        </tr>
+
+        <tr>
+            <td colspan="6"><b>Tổng cộng</b></td>
+            <td id="tongAll"></td>
+        </tr>
+    </table>
+</div>
+
+<script>
+let rooms = [];
+let selectedIndex = -1;
+
+// format ngày
+function formatDate(dateStr) {
+    if (!dateStr) return "";
+    let d = new Date(dateStr);
+    let day = String(d.getDate()).padStart(2, '0');
+    let month = String(d.getMonth() + 1).padStart(2, '0');
+    let year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// 🔥 LƯU LOCAL
+function saveData() {
+    localStorage.setItem("rooms", JSON.stringify(rooms));
+}
+
+// 🔥 LOAD DATA
+function loadData() {
+    let data = localStorage.getItem("rooms");
+    if (data) {
+        rooms = JSON.parse(data);
+        render();
+    }
+}
+
+function getData() {
+    return {
+        phong: document.getElementById("phong").value,
+        tuNgay: document.getElementById("tuNgay").value,
+        denNgay: document.getElementById("denNgay").value,
+        dienCu: Number(document.getElementById("dienCu").value),
+        dienMoi: Number(document.getElementById("dienMoi").value),
+        nuocCu: Number(document.getElementById("nuocCu").value),
+        nuocMoi: Number(document.getElementById("nuocMoi").value)
+    };
+}
+
+function render() {
+    let html = "";
+    rooms.forEach((r, i) => {
+        html += `
+        <tr>
+            <td>${r.phong}</td>
+            <td>${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)}</td>
+            <td>${r.dienMoi - r.dienCu}</td>
+            <td>${r.nuocMoi - r.nuocCu}</td>
+            <td>
+                <button onclick="selectRoom(${i})">Chọn</button>
+                <button onclick="deleteRoom(${i})">Xoá</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("roomList").innerHTML = html;
+}
+
+function addRoom() {
+    rooms.push(getData());
+    saveData();
+    render();
+}
+
+function updateRoom() {
+    if (selectedIndex === -1) return;
+    rooms[selectedIndex] = getData();
+    saveData();
+    render();
+}
+
+function deleteRoom(i) {
+    rooms.splice(i, 1);
+    saveData();
+    render();
+}
+
+function selectRoom(i) {
+    selectedIndex = i;
+    let r = rooms[i];
+
+    let giaDien = Number(document.getElementById("giaDien").value);
+    let giaNuoc = Number(document.getElementById("giaNuoc").value);
+
+    document.getElementById("viewPhong").innerText = r.phong;
+    document.getElementById("viewTu").innerText = formatDate(r.tuNgay);
+    document.getElementById("viewDen").innerText = formatDate(r.denNgay);
+
+    document.getElementById("p1").innerText = r.phong;
+    document.getElementById("p2").innerText = r.phong;
+
+    let tongD = r.dienMoi - r.dienCu;
+    let tongN = r.nuocMoi - r.nuocCu;
+
+    document.getElementById("dc").innerText = r.dienCu;
+    document.getElementById("dm").innerText = r.dienMoi;
+    document.getElementById("tongD").innerText = tongD;
+
+    document.getElementById("nc").innerText = r.nuocCu;
+    document.getElementById("nm").innerText = r.nuocMoi;
+    document.getElementById("tongN").innerText = tongN;
+
+    document.getElementById("giaD").innerText = giaDien;
+    document.getElementById("giaN").innerText = giaNuoc;
+
+    let tienD = tongD * giaDien;
+    let tienN = tongN * giaNuoc;
+
+    document.getElementById("tienD").innerText = tienD;
+    document.getElementById("tienN").innerText = tienN;
+    document.getElementById("tongAll").innerText = tienD + tienN;
+}
+
+// 🔥 tự load khi mở web
+window.onload = loadData;
+</script>
+
+</body>
+</html>
