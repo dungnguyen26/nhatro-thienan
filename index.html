@@ -38,6 +38,7 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 
 <body>
 
+<!-- LOGIN -->
 <div id="loginBox">
 <h2>Đăng nhập</h2>
 <input id="user" placeholder="Tài khoản"><br>
@@ -45,6 +46,7 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 <button onclick="login()">Đăng nhập</button>
 </div>
 
+<!-- APP -->
 <div class="container" id="app">
 
 <h1>NHÀ TRỌ THIÊN AN</h1>
@@ -69,6 +71,7 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 <button onclick="viewAllRooms()">Xem tất cả</button>
 </div>
 
+<!-- BẢNG -->
 <table>
 <tr>
 <th>Phòng</th>
@@ -84,6 +87,7 @@ button { padding: 5px 10px; margin: 3px; cursor: pointer; }
 
 <hr>
 
+<!-- PHIẾU -->
 <div id="printArea">
 <h2 style="text-align:center;">Bảng Chốt Số Điện Nước</h2>
 
@@ -92,17 +96,7 @@ Phòng: <span id="viewPhong"></span><br>
 Từ ngày: <span id="viewTu"></span> → Đến ngày: <span id="viewDen"></span>
 </div>
 
-<table id="billTable">
-<tr>
-<th>Phòng</th>
-<th>Nội dung</th>
-<th>Số cũ</th>
-<th>Số mới</th>
-<th>Tổng</th>
-<th>Đơn giá</th>
-<th>Thành tiền</th>
-</tr>
-</table>
+<table id="billTable"></table>
 
 <br><br>
 
@@ -224,6 +218,12 @@ billTable.innerHTML=`
 </tr>
 
 <tr>
+<td colspan="7" style="background:#d0d0d0; font-weight:bold; text-align:left;">
+PHÒNG ${r.phong} (${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)})
+</td>
+</tr>
+
+<tr>
 <td>${r.phong}</td><td>Tiền điện</td>
 <td>${r.dienCu}</td><td>${r.dienMoi}</td>
 <td>${td}</td><td>${money(gd)}</td><td>${money(tienD)}</td>
@@ -240,13 +240,9 @@ billTable.innerHTML=`
 <td><b>${money(tienD+tienN)}</b></td>
 </tr>
 `;
-
-viewPhong.innerText=r.phong;
-viewTu.innerText=formatDate(r.tuNgay);
-viewDen.innerText=formatDate(r.denNgay);
 }
 
-// XEM TẤT CẢ (BẢN XỊN)
+// XEM TẤT CẢ
 function viewAllRooms(){
 let html="";
 let gd=+giaDien.value, gn=+giaNuoc.value;
@@ -261,8 +257,8 @@ let tong=tienD+tienN;
 
 html+=`
 <tr>
-<td colspan="7" style="background:#ddd; font-weight:bold; text-align:left;">
-PHÒNG ${r.phong}
+<td colspan="7" style="background:#d0d0d0; font-weight:bold; text-align:left;">
+PHÒNG ${r.phong} (${formatDate(r.tuNgay)} → ${formatDate(r.denNgay)})
 </td>
 </tr>
 
